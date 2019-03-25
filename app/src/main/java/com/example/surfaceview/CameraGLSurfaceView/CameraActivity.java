@@ -20,6 +20,8 @@ public class CameraActivity extends Activity {
 
     private final String[] mPermissions=new String[]{Manifest.permission.CAMERA};
 
+    private CameraGLSurfaceView cameraGLSurfaceView;
+
     @Override
     protected void onCreate( @Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -28,6 +30,15 @@ public class CameraActivity extends Activity {
             showRequestPermissionDialog();
         } else {
             setContentView(R.layout.activity_camera);
+            cameraGLSurfaceView = findViewById(R.id.glsv_camera);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (cameraGLSurfaceView != null) {
+            cameraGLSurfaceView.onDestroy();
         }
     }
 

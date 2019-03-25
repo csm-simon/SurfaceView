@@ -1,11 +1,23 @@
 package com.example.surfaceview.CameraGLSurfaceView;
 
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.util.Log;
+import com.example.surfaceview.CommonUtil.DeviceUtil;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 
 public class SimonCamera {
 
     private Camera mCamera;
+
+    private boolean isPreviewing;
 
     private static SimonCamera mSingleInstance;
 
@@ -39,17 +51,89 @@ public class SimonCamera {
         CAMERA_LAYOUT_ID_FRONT
     }
 
+    /**
+     * 开始预览
+     * @param surfaceTexture
+     */
+    public void startPreview (SurfaceTexture surfaceTexture) {
+        if (mCamera != null && !isPreviewing) {
+            try {
+                mCamera.setPreviewTexture(surfaceTexture);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            mCamera.startPreview();
+            isPreviewing = true;
+        }
+    }
+
+    /**
+     * 结束预览
+     */
+    public void stopPreview () {
+        if(null != mCamera) {
+            mCamera.setPreviewCallback(null);
+            mCamera.stopPreview();
+            isPreviewing = false;
+
+            mCamera.release();
+            mCamera = null;
+        }
+    }
+
+    /**
+     * 对焦
+     * @return
+     */
+    public void onFocus(float x, float y, Camera.AutoFocusCallback cb) {
+        if(mCamera!=null){
+            Camera.Parameters parameters=mCamera.getParameters();
+            if (parameters.getMaxNumFocusAreas()<=0) {
+                mCamera.autoFocus(cb);
+                return;
+            }
+            mCamera.cancelAutoFocus();
+            List<Camera.Area> areas=new ArrayList<Camera.Area>();
+            List<Camera.Area> areasMetrix=new ArrayList<Camera.Area>();
+            Rect focusRect = calculateTapArea(x, y, 1.0f);
+            Rect metrixRect = calculateTapArea(x, y, 1.5f);
+            areas.add(new Camera.Area(focusRect, 1000));
+            areasMetrix.add(new Camera.Area(metrixRect,1000));
+            parameters.setMeteringAreas(areasMetrix);
+            parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+            parameters.setFocusAreas(areas);
+            try {
+                mCamera.setParameters(parameters);
+            } catch (Exception e) {
+                // TODO: handle exception
+                e.printStackTrace();
+            }
+            mCamera.autoFocus(cb);
+        }
+    }
+
+    /**
+     * 设置闪光灯模式
+     * @param flashMode
+     */
+    public void switchFlashMode(FlashMode flashMode) {
+        Camera.Parameters parameters=mCamera.getParameters();
+        parameters.setFlashMode(flashMode.value);
+        mCamera.setParameters(parameters);
+        mCamera.startPreview();
+    }
+
     public static class Builder{
 
-        CameraRadio mCameraRadio;
+        private CameraRadio mCameraRadio;
 
-        CameraFlash mCameraFlash;
+        private CameraFlash mCameraFlash;
 
-        CameraLayoutID mCameraLayoutId;
+        private CameraLayoutID mCameraLayoutId;
 
-        Size mCameraPreViewSize;
+        private PreviewSize mCameraPreViewSize;
 
-        Size mCameraPictureSize;
+        private PictureSize mCameraPictureSize;
 
         public Builder setmCameraRadio(CameraRadio mCameraRadio) {
             this.mCameraRadio = mCameraRadio;
@@ -65,16 +149,6 @@ public class SimonCamera {
             return this;
         }
 
-        public Builder setmCameraPreViewSize(Size mCameraPreViewSize) {
-            this.mCameraPreViewSize = mCameraPreViewSize;
-            return this;
-        }
-
-        public Builder setmCameraPictureSize(Size mCameraPictureSize) {
-            this.mCameraPictureSize = mCameraPictureSize;
-            return this;
-        }
-
         public SimonCamera build () {
             SimonCamera camera = SimonCamera.getInstance();
             if (camera.mCamera == null) {
@@ -84,7 +158,7 @@ public class SimonCamera {
                             camera.mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
                             break;
                         case CAMERA_LAYOUT_ID_FRONT:
-                            camera.mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
+                            camera.mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_FRONT);
                             break;
                     }
                 } else {
@@ -94,20 +168,20 @@ public class SimonCamera {
                 Camera.Parameters mParameters = camera.mCamera.getParameters();
                 setUpCameraFlash(mParameters);
                 setUpCameraRadio(mParameters);
-                setUPPreviewSize(mParameters);
-                setUPPicturzeSize(mParameters);
+                setUpPreviewSize(mParameters);
+                setUpPicturzeSize(mParameters);
                 camera.mCamera.setParameters(mParameters);
             }
             return camera;
         }
 
-        private void setUPPicturzeSize(Camera.Parameters parameters) {
+        private void setUpPicturzeSize(Camera.Parameters parameters) {
             if (mCameraPictureSize != null) {
                 parameters.setPictureSize(mCameraPictureSize.width,mCameraPictureSize.height);
             }
         }
 
-        private void setUPPreviewSize(Camera.Parameters parameters) {
+        private void setUpPreviewSize(Camera.Parameters parameters) {
             if (mCameraPreViewSize != null) {
                 parameters.setPreviewSize(mCameraPreViewSize.width,mCameraPreViewSize.height);
             }
@@ -117,10 +191,24 @@ public class SimonCamera {
             if (mCameraRadio != null) {
                 switch (mCameraRadio) {
                     case CAMERA_RADIO_1_1:
+                        mCameraPreViewSize = CameraSizeSelector.getCameraPreviewSizes(getPreviewSize(mParameters),
+                                1.f, CameraSizeSelector.HEIGHT);
+                        mCameraPictureSize = CameraSizeSelector.getCameraPictureSize(getPictureSize(mParameters),
+                                getPreviewSize(mParameters),1.f, 1.f, CameraSizeSelector.HEIGHT);
                         break;
                     case CAMERA_RADIO_3_4:
+                        mCameraPreViewSize = CameraSizeSelector.getCameraPreviewSizes(getPreviewSize(mParameters),
+                                4.f/3.f, CameraSizeSelector.HEIGHT);
+                        mCameraPictureSize = CameraSizeSelector.getCameraPictureSize(getPictureSize(mParameters),
+                                getPreviewSize(mParameters),4.f/3.f, 4.f/3.f, CameraSizeSelector.HEIGHT);
+
                         break;
                     case CAMERA_RADIO_9_16:
+                        mCameraPreViewSize = CameraSizeSelector.getCameraPreviewSizes(getPreviewSize(mParameters),
+                                16.f/9.f, CameraSizeSelector.HEIGHT);
+                        mCameraPictureSize = CameraSizeSelector.getCameraPictureSize(getPictureSize(mParameters),
+                                getPreviewSize(mParameters),16.f/9.f, 16.f/9.f, CameraSizeSelector.HEIGHT);
+
                         break;
                 }
             }
@@ -130,19 +218,44 @@ public class SimonCamera {
             if (mCameraFlash != null) {
                 switch (mCameraFlash) {
                     case CAMERA_FLASH_AUTO:
-                        parameters.setFlashMode("FLASH_MODE_AUTO");
+                        parameters.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
                         break;
                     case CAMERA_FLASH_CLOSE:
-                        parameters.setFlashMode("FLASH_MODE_OFF");
+                        parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
                         break;
                     case CAMERA_FLASH_LIGHT:
-                        parameters.setFlashMode("FLASH_MODE_ON");
+                        parameters.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
                         break;
                 }
             }
         }
 
+        private List<PreviewSize> getPreviewSize (Camera.Parameters mParameters) {
+            if (mParameters != null) {
+                List<PreviewSize> previewSizeList = new LinkedList<>();
+                List<Camera.Size> originalList = mParameters.getSupportedPreviewSizes();
+                for (Camera.Size size:originalList) {
+                    previewSizeList.add(new PreviewSize(size.width,size.height));
+                }
+                return previewSizeList;
+            }
+            return null;
+        }
+
+        private List<PictureSize> getPictureSize (Camera.Parameters mParameters) {
+            if (mParameters != null) {
+                List<PictureSize> pictureSizeList = new LinkedList<>();
+                List<Camera.Size> originalList = mParameters.getSupportedPictureSizes();
+                for (Camera.Size size:originalList) {
+                    pictureSizeList.add(new PictureSize(size.width,size.height));
+                }
+                return pictureSizeList;
+            }
+            return null;
+        }
+
     }
+
 
     /**
      * 相机图像尺寸类。
@@ -185,6 +298,122 @@ public class SimonCamera {
         public PictureSize(int w, int h) {
             super(w,h);
         }
+    }
+
+    /**
+     * 摄像头类型。
+     */
+    public enum Facing {
+
+        /**
+         * 前置摄像头。
+         */
+        FRONT("FRONT_FACING"), /**
+         * 后置摄像头。
+         */
+        BACK("BACK_FACING"), /**
+         * 外置摄像头。
+         */
+        EXTERNAL("EXTERNAL");
+
+        Facing(String value) {
+            throw new RuntimeException("Stub!");
+        }
+
+        @Override
+        public String toString() {
+            throw new RuntimeException("Stub!");
+        }
+
+        private final String value;
+    }
+
+    /**
+     * 闪光灯模式。
+     */
+    public enum FlashMode {
+
+        OFF(Camera.Parameters.FLASH_MODE_OFF), AUTO(Camera.Parameters.FLASH_MODE_AUTO), ON(Camera.Parameters.FLASH_MODE_ON), TORCH(Camera.Parameters.FLASH_MODE_TORCH);
+
+        FlashMode(String value) {
+            throw new RuntimeException("Stub!");
+        }
+
+        @Override
+        public String toString() {
+            throw new RuntimeException("Stub!");
+        }
+
+        public static FlashMode get(String value) {
+            throw new RuntimeException("Stub!");
+        }
+
+        private final String value;
+    }
+
+    /**
+     * 对焦模式
+     */
+    public enum FocusMode {
+
+        AUTO(Camera.Parameters.FOCUS_MODE_AUTO), CONTINUOUS_PICTURE(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE), CONTINUOUS_VIDEO(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO), FIXED(Camera.Parameters.FOCUS_MODE_FIXED), INFINITY(Camera.Parameters.FOCUS_MODE_INFINITY), MACRO(Camera.Parameters.FOCUS_MODE_MACRO), EDOF(Camera.Parameters.FOCUS_MODE_EDOF);
+
+        FocusMode(String value) {
+            throw new RuntimeException("Stub!");
+        }
+
+        @Override
+        public String toString() {
+            throw new RuntimeException("Stub!");
+        }
+
+        public static FocusMode get(String value) {
+            throw new RuntimeException("Stub!");
+        }
+
+        private final String value;
+    }
+
+    /***
+     *   计算点击区域
+     * @param x
+     * @param y
+     * @param coefficient
+     * @return
+     */
+    private  Rect calculateTapArea(float x, float y, float coefficient) {
+        float focusAreaSize = 300;
+        int areaSize = Float.valueOf(focusAreaSize * coefficient).intValue();
+        int centerY =0;
+        int  centerX=0;
+        //在Camera.Area对象中的Rect字段，代表了一个被映射成2000x2000单元格的矩形
+        // 坐标（-1000，-1000）代表Camera图像的左上角，（1000,1000）代表Camera图像的右下角
+        //以此根据点击的坐标进行换算
+        centerY = (int) (x / DeviceUtil.getScreenWidth() * 2000 - 1000);
+        centerX= (int) (y / DeviceUtil.getScreenWidth() * 2000 - 1000);
+        int left = clamp(centerX - areaSize / 2, -1000, 1000);
+        int top = clamp(centerY - areaSize / 2, -1000, 1000);
+
+        RectF rectF = new RectF(left, top, left + areaSize, top + areaSize);
+        //Math.round()四舍五入
+        return new Rect(Math.round(rectF.left), Math.round(rectF.top), Math.round(rectF.right), Math.round(rectF.bottom));
+    }
+
+    /**
+     * 防止坐标值超出边界的方法
+     * @param x
+     * @param min
+     * @param max
+     * @return
+     */
+    private int clamp(int x, int min, int max) {
+        if (x > max) {
+            return max;
+        }
+        if (x < min) {
+            return min;
+        }
+        return x;
     }
 
 }

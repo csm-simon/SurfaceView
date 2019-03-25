@@ -78,6 +78,10 @@ public class CameraGLSurfaceView extends GLSurfaceView {
         this.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
     }
 
+    public void onDestroy() {
+        SimonCameraController.getInstance().stopCamera();
+    }
+
     class MyCameraRenderer implements Renderer, SurfaceTexture.OnFrameAvailableListener {
 
         @Override
@@ -108,7 +112,7 @@ public class CameraGLSurfaceView extends GLSurfaceView {
             mSurfaceTexture = new SurfaceTexture(mTextures[0]);
             mSurfaceTexture.setOnFrameAvailableListener(this);
 
-            CameraUtil.getInstance().openCamera();
+            SimonCameraController.getInstance().createCamera();
 
         }
 
@@ -116,10 +120,7 @@ public class CameraGLSurfaceView extends GLSurfaceView {
         public void onSurfaceChanged(GL10 gl, int width, int height) {
             glViewport(0,0,width,height);
 
-            if(!CameraUtil.getInstance().isPreviewing()){
-                //开始预览
-                CameraUtil.getInstance().startPreview(mSurfaceTexture);
-            }
+            SimonCameraController.getInstance().startPreview(mSurfaceTexture);
 
         }
 
