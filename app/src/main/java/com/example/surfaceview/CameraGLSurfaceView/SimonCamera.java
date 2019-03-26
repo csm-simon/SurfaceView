@@ -4,7 +4,6 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
-import android.util.Log;
 import com.example.surfaceview.CommonUtil.DeviceUtil;
 
 import java.io.IOException;
@@ -19,31 +18,13 @@ public class SimonCamera {
 
     private boolean isPreviewing;
 
-    private static SimonCamera mSingleInstance;
 
     private SimonCamera () {}
-
-    public static SimonCamera getInstance() {
-        if (mSingleInstance == null) {
-            synchronized (SimonCamera.class) {
-                if (mSingleInstance == null) {
-                    mSingleInstance = new SimonCamera();
-                }
-            }
-        }
-        return mSingleInstance;
-    }
 
     enum CameraRadio {
         CAMERA_RADIO_1_1,
         CAMERA_RADIO_3_4,
         CAMERA_RADIO_9_16
-    }
-
-    enum CameraFlash {
-        CAMERA_FLASH_AUTO,
-        CAMERA_FLASH_LIGHT,
-        CAMERA_FLASH_CLOSE
     }
 
     enum CameraLayoutID{
@@ -82,6 +63,17 @@ public class SimonCamera {
     }
 
     /**
+     * 设置闪光灯模式
+     * @param flashMode
+     */
+    public void switchFlashMode(FlashMode flashMode) {
+        Camera.Parameters parameters = mCamera.getParameters();
+        parameters.setFlashMode(flashMode.value);
+        mCamera.setParameters(parameters);
+        mCamera.startPreview();
+    }
+
+    /**
      * 对焦
      * @return
      */
@@ -112,22 +104,11 @@ public class SimonCamera {
         }
     }
 
-    /**
-     * 设置闪光灯模式
-     * @param flashMode
-     */
-    public void switchFlashMode(FlashMode flashMode) {
-        Camera.Parameters parameters=mCamera.getParameters();
-        parameters.setFlashMode(flashMode.value);
-        mCamera.setParameters(parameters);
-        mCamera.startPreview();
-    }
-
     public static class Builder{
 
         private CameraRadio mCameraRadio;
 
-        private CameraFlash mCameraFlash;
+        private FlashMode mCameraFlash;
 
         private CameraLayoutID mCameraLayoutId;
 
@@ -140,7 +121,7 @@ public class SimonCamera {
             return this;
         }
 
-        public void setmCameraFlash(CameraFlash mCameraFlash) {
+        public void setmCameraFlash(FlashMode mCameraFlash) {
             this.mCameraFlash = mCameraFlash;
         }
 
@@ -150,7 +131,7 @@ public class SimonCamera {
         }
 
         public SimonCamera build () {
-            SimonCamera camera = SimonCamera.getInstance();
+            SimonCamera camera = new SimonCamera();
             if (camera.mCamera == null) {
                 if (mCameraLayoutId != null) {
                     switch (mCameraLayoutId) {
@@ -216,17 +197,7 @@ public class SimonCamera {
 
         private void setUpCameraFlash(Camera.Parameters parameters) {
             if (mCameraFlash != null) {
-                switch (mCameraFlash) {
-                    case CAMERA_FLASH_AUTO:
-                        parameters.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
-                        break;
-                    case CAMERA_FLASH_CLOSE:
-                        parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
-                        break;
-                    case CAMERA_FLASH_LIGHT:
-                        parameters.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
-                        break;
-                }
+                parameters.setFlashMode(mCameraFlash.value);
             }
         }
 
@@ -255,7 +226,6 @@ public class SimonCamera {
         }
 
     }
-
 
     /**
      * 相机图像尺寸类。
@@ -336,16 +306,11 @@ public class SimonCamera {
         OFF(Camera.Parameters.FLASH_MODE_OFF), AUTO(Camera.Parameters.FLASH_MODE_AUTO), ON(Camera.Parameters.FLASH_MODE_ON), TORCH(Camera.Parameters.FLASH_MODE_TORCH);
 
         FlashMode(String value) {
-            throw new RuntimeException("Stub!");
+            this.value = value;
         }
 
-        @Override
-        public String toString() {
-            throw new RuntimeException("Stub!");
-        }
-
-        public static FlashMode get(String value) {
-            throw new RuntimeException("Stub!");
+        public String get() {
+            return value;
         }
 
         private final String value;
@@ -359,16 +324,11 @@ public class SimonCamera {
         AUTO(Camera.Parameters.FOCUS_MODE_AUTO), CONTINUOUS_PICTURE(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE), CONTINUOUS_VIDEO(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO), FIXED(Camera.Parameters.FOCUS_MODE_FIXED), INFINITY(Camera.Parameters.FOCUS_MODE_INFINITY), MACRO(Camera.Parameters.FOCUS_MODE_MACRO), EDOF(Camera.Parameters.FOCUS_MODE_EDOF);
 
         FocusMode(String value) {
-            throw new RuntimeException("Stub!");
+            this.value = value;
         }
 
-        @Override
-        public String toString() {
-            throw new RuntimeException("Stub!");
-        }
-
-        public static FocusMode get(String value) {
-            throw new RuntimeException("Stub!");
+        public String get() {
+            return value;
         }
 
         private final String value;

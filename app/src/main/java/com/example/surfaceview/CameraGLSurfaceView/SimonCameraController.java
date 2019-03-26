@@ -2,11 +2,11 @@ package com.example.surfaceview.CameraGLSurfaceView;
 
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
-import static com.example.surfaceview.CameraGLSurfaceView.SimonCamera.CameraFlash.CAMERA_FLASH_AUTO;
-import static com.example.surfaceview.CameraGLSurfaceView.SimonCamera.CameraFlash.CAMERA_FLASH_LIGHT;
+import com.example.surfaceview.CommonUtil.ToastUtil;
+import com.example.surfaceview.MyApplication;
+
+import java.util.Arrays;
 import static com.example.surfaceview.CameraGLSurfaceView.SimonCamera.CameraLayoutID.CAMERA_LAYOUT_ID_BACK;
-import static com.example.surfaceview.CameraGLSurfaceView.SimonCamera.CameraLayoutID.CAMERA_LAYOUT_ID_FRONT;
-import static com.example.surfaceview.CameraGLSurfaceView.SimonCamera.CameraRadio.CAMERA_RADIO_1_1;
 import static com.example.surfaceview.CameraGLSurfaceView.SimonCamera.CameraRadio.CAMERA_RADIO_9_16;
 
 public class SimonCameraController {
@@ -16,6 +16,8 @@ public class SimonCameraController {
 	private SimonCamera mSimonCamera;
 
 	private SurfaceTexture mSurfaceTexture;
+
+	private SimonCamera.FlashMode curFlashMode;
 
 	private SimonCameraController(){
 
@@ -34,15 +36,17 @@ public class SimonCameraController {
 	}
 
 	public void createCamera () {
-		createCamera(CAMERA_FLASH_AUTO,CAMERA_RADIO_9_16,CAMERA_LAYOUT_ID_BACK);
+		createCamera(SimonCamera.FlashMode.AUTO,CAMERA_RADIO_9_16,CAMERA_LAYOUT_ID_BACK);
 	}
 
-	public void createCamera (SimonCamera.CameraFlash cameraFlashMode, SimonCamera.CameraRadio cameraRadio, SimonCamera.CameraLayoutID layoutID) {
+	public void createCamera (SimonCamera.FlashMode cameraFlashMode, SimonCamera.CameraRadio cameraRadio, SimonCamera.CameraLayoutID layoutID) {
 		SimonCamera.Builder cameraBUilder = new SimonCamera.Builder();
 		if (cameraFlashMode != null) {
 			cameraBUilder.setmCameraFlash(cameraFlashMode);
+			curFlashMode = cameraFlashMode;
 		} else {
-			cameraBUilder.setmCameraFlash(CAMERA_FLASH_AUTO);
+			cameraBUilder.setmCameraFlash(SimonCamera.FlashMode.AUTO);
+			curFlashMode = SimonCamera.FlashMode.AUTO;
 		}
 
 		if (cameraRadio != null) {
@@ -88,10 +92,13 @@ public class SimonCameraController {
 
 	/**
 	 * 设置闪光灯模式
-	 * @param flashMode
+	 * @param
 	 */
-	public void switchFlashMode(SimonCamera.FlashMode flashMode) {
-		mSimonCamera.switchFlashMode(flashMode);
+	public void switchFlashMode() {
+		int i = (Arrays.binarySearch(SimonCamera.FlashMode.values(),curFlashMode) +1) % SimonCamera.FlashMode.values().length;
+		curFlashMode = SimonCamera.FlashMode.values()[i];
+		mSimonCamera.switchFlashMode(curFlashMode);
+		ToastUtil.show(MyApplication.getApplication(),"Flash mode:"+SimonCamera.FlashMode.values()[i]);
 	}
 
 	/**

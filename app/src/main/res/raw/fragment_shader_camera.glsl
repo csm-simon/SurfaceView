@@ -6,9 +6,13 @@ varying vec2 texcoordOut;
 uniform samplerExternalOES previewTexture;
 
 void main() {
-          mediump vec4 textureColor = texture2D(previewTexture,texcoordOut);
-          gl_FragColor = vec4(vec3(0.5)+(textureColor.rgb-vec3(0.5))*2.0,textureColor.a);
+          gl_FragColor = texture2D(previewTexture, texcoordOut);
 
+//对比度
+//          mediump vec4 textureColor = texture2D(previewTexture,texcoordOut);
+//          gl_FragColor = vec4(vec3(0.5)+(textureColor.rgb-vec3(0.5))*2.0,textureColor.a);
+
+//马赛克
 //             vec2 uv = texcoordOut.xy;
 //             float dx = 10.0f * 0.0018f;
 //             float dy = 10.0f * 0.001f;

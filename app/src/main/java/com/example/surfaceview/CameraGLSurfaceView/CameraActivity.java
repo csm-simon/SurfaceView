@@ -13,14 +13,21 @@ import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
+import android.view.View;
 import android.widget.Toast;
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import com.example.surfaceview.R;
+
+import java.util.Arrays;
 
 public class CameraActivity extends Activity {
 
     private final String[] mPermissions=new String[]{Manifest.permission.CAMERA};
 
-    private CameraGLSurfaceView cameraGLSurfaceView;
+    @BindView(R.id.glsv_camera)
+    CameraGLSurfaceView cameraGLSurfaceView;
 
     @Override
     protected void onCreate( @Nullable Bundle savedInstanceState) {
@@ -30,7 +37,7 @@ public class CameraActivity extends Activity {
             showRequestPermissionDialog();
         } else {
             setContentView(R.layout.activity_camera);
-            cameraGLSurfaceView = findViewById(R.id.glsv_camera);
+            ButterKnife.bind(this);
         }
     }
 
@@ -40,6 +47,16 @@ public class CameraActivity extends Activity {
         if (cameraGLSurfaceView != null) {
             cameraGLSurfaceView.onDestroy();
         }
+    }
+
+    @OnClick(R.id.iv_back)
+    public void clickBack() {
+        finish();
+    }
+
+    @OnClick(R.id.iv_flash)
+    public void switchFlash(){
+        SimonCameraController.getInstance().switchFlashMode();
     }
 
     //显示权限需求的dialog
