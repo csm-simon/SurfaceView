@@ -1,30 +1,32 @@
-package com.example.surfaceview.CameraGLSurfaceView;
+package com.example.surfaceview.CameraGLSurfaceView.camera;
 
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import com.example.surfaceview.CommonUtil.ToastUtil;
 import com.example.surfaceview.MyApplication;
-
 import java.util.Arrays;
-import static com.example.surfaceview.CameraGLSurfaceView.SimonCamera.CameraLayoutID.CAMERA_LAYOUT_ID_BACK;
-import static com.example.surfaceview.CameraGLSurfaceView.SimonCamera.CameraRadio.CAMERA_RADIO_9_16;
+import static com.example.surfaceview.CameraGLSurfaceView.camera.SimonCamera.CameraRadio.CAMERA_RADIO_9_16;
 
 public class SimonCameraController {
 	
 	private static final String TAG = "SimonCameraController";
 
-	private SimonCamera mSimonCamera;
-
 	private SurfaceTexture mSurfaceTexture;
 
+	private SimonCamera mSimonCamera;
+
 	private SimonCamera.FlashMode curFlashMode;
+
+	private SimonCamera.Facing curFacing;
+
+	private SimonCamera.BeautyLevel curBeautyLevel;
 
 	private SimonCameraController(){
 
 	}
 
 	/**Ò
-	 * DCL(Double Check Lock 实现单例)
+	 * 静态内部类实现单例
 	 * @return
 	 */
 	public static synchronized SimonCameraController getInstance(){
@@ -36,10 +38,10 @@ public class SimonCameraController {
 	}
 
 	public void createCamera () {
-		createCamera(SimonCamera.FlashMode.AUTO,CAMERA_RADIO_9_16,CAMERA_LAYOUT_ID_BACK);
+		createCamera(SimonCamera.FlashMode.AUTO,CAMERA_RADIO_9_16, SimonCamera.Facing.BACK);
 	}
 
-	public void createCamera (SimonCamera.FlashMode cameraFlashMode, SimonCamera.CameraRadio cameraRadio, SimonCamera.CameraLayoutID layoutID) {
+	public void createCamera (SimonCamera.FlashMode cameraFlashMode, SimonCamera.CameraRadio cameraRadio, SimonCamera.Facing layoutID) {
 		SimonCamera.Builder cameraBUilder = new SimonCamera.Builder();
 		if (cameraFlashMode != null) {
 			cameraBUilder.setmCameraFlash(cameraFlashMode);
@@ -57,19 +59,29 @@ public class SimonCameraController {
 
 		if (layoutID != null) {
 			cameraBUilder.setmCameraLayoutId(layoutID);
+			curFacing = layoutID;
 		} else {
-			cameraBUilder.setmCameraLayoutId(CAMERA_LAYOUT_ID_BACK);
+			cameraBUilder.setmCameraLayoutId(SimonCamera.Facing.BACK);
+			curFacing = SimonCamera.Facing.BACK;
 		}
 
 		mSimonCamera = cameraBUilder.build();
 	}
 
+	/**
+	 * 设置预览Surface
+	 * @param
+	 */
+	public void setPreviewSurface(SurfaceTexture surfaceTexture) {
+		mSurfaceTexture = surfaceTexture;
+		mSimonCamera.setPreviewSurface(mSurfaceTexture);
+	}
+
 	/**开始相机预览
 	 * @param
 	 */
-	public void startPreview(SurfaceTexture surfaceTexture){
-		mSurfaceTexture = surfaceTexture;
-		mSimonCamera.startPreview(mSurfaceTexture);
+	public void startPreview(){
+		mSimonCamera.startPreview();
 	}
 
 	/**
@@ -81,15 +93,21 @@ public class SimonCameraController {
 
 	/***
 	 * 设置前后相机
-	 * @param cameraPosition
+	 * @param
 	 */
-	public void switchCamera(SimonCamera.CameraLayoutID cameraPosition) {
-		mSimonCamera.stopPreview();
-		mSimonCamera = null;
-		createCamera(null,null,cameraPosition);
-		startPreview(mSurfaceTexture);
+	public void switchCamera() {
+		mSimonCamera.releaseCamera();
+		int i = (Arrays.binarySearch(SimonCamera.Facing.values(),curFacing) + 1) % SimonCamera.Facing.values().length;
+		curFacing = SimonCamera.Facing.values()[i];
+		createCamera(null,null,curFacing);
+		mSimonCamera.setPreviewSurface(mSurfaceTexture);
+		mSimonCamera.startPreview();
+		ToastUtil.show(MyApplication.getApplication(),"Flash mode:"+SimonCamera.Facing.values()[i]);
 	}
 
+	public SimonCamera.Facing getCurFacing() {
+		return curFacing;
+	}
 	/**
 	 * 设置闪光灯模式
 	 * @param
@@ -101,6 +119,21 @@ public class SimonCameraController {
 		ToastUtil.show(MyApplication.getApplication(),"Flash mode:"+SimonCamera.FlashMode.values()[i]);
 	}
 
+	public SimonCamera.FlashMode getCurFlashMode() {
+		return curFlashMode;
+	}
+
+	/**
+	 * 设置美颜等级
+	 */
+	public void switchBeautyLevel(SimonCamera.BeautyLevel beautyLevel) {
+		curBeautyLevel = beautyLevel;
+		ToastUtil.show(MyApplication.getApplication(),"Flash mode:"+curBeautyLevel);
+	}
+
+	public SimonCamera.BeautyLevel getBeautyLevel () {
+		return curBeautyLevel;
+	}
 	/**
 	 * 对焦
 	 * @return

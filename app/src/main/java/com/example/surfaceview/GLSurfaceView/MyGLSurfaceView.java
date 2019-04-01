@@ -8,6 +8,7 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLUtils;
 import android.util.AttributeSet;
 import android.util.Log;
+import com.example.surfaceview.CommonUtil.TextResourceReader;
 import com.example.surfaceview.R;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -107,7 +108,7 @@ public class MyGLSurfaceView extends GLSurfaceView {
             mImageTextureVertexesBuffer.put(mImageTextureVertexes);
             mImageTextureVertexesBuffer.position(0);
 
-            mVertexShader = loadShader(GL_VERTEX_SHADER,TextResourceReader.readTextFileFromResource(mContext, R.raw.vertex_shader));
+            mVertexShader = loadShader(GL_VERTEX_SHADER, TextResourceReader.readTextFileFromResource(mContext, R.raw.vertex_shader));
             mFragmentShader = loadShader(GL_FRAGMENT_SHADER,TextResourceReader.readTextFileFromResource(mContext,R.raw.fragment_shader_skin));
 
         }

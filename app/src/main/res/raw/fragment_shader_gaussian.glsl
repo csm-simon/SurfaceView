@@ -32,7 +32,5 @@ void main()
         sum += texture2D(originalTexture, texcoordOut + vec2(radius*3.0,0)) * 0.09;
         sum += texture2D(originalTexture, texcoordOut + vec2(radius*4.0,0)) * 0.05;
     }
-    
-
 	gl_FragColor = sum;
 }

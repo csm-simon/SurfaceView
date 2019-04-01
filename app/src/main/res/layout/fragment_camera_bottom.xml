@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent" android:layout_height="match_parent">
+
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toTopOf="@id/rl_bottom"
+    >
+        <ImageView
+                android:id="@+id/iv_beauty_level_1"
+                android:src="@drawable/icon_beauty_level_1"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+        />
+        <ImageView
+                android:id="@+id/iv_beauty_level_2"
+                android:src="@drawable/icon_beauty_level_2"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+        />
+        <ImageView
+                android:id="@+id/iv_beauty_level_3"
+                android:src="@drawable/icon_beauty_level_3"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:scaleType="fitCenter"
+        />
+        <ImageView
+                android:id="@+id/iv_beauty_level_4"
+                android:src="@drawable/icon_beauty_level_4"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+        />
+        <ImageView
+                android:id="@+id/iv_beauty_level_5"
+                android:src="@drawable/icon_beauty_level_5"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+        />
+
+    </LinearLayout>
+
+    <RelativeLayout
+            android:id="@+id/rl_bottom"
+            android:layout_width="match_parent"
+            android:layout_height="130dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+    >
+        <View
+                android:id="@+id/v_line"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/colorWhite"
+                android:layout_marginTop="5dp"
+        />
+        <ImageView
+                android:id="@+id/iv_beauty"
+                android:src="@drawable/icon_beauty"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="30dp"
+        />
+        <ImageView
+                android:id="@+id/iv_shutter"
+                android:src="@drawable/icon_shutter"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:layout_centerInParent="true"
+        />
+    </RelativeLayout>
+
+</android.support.constraint.ConstraintLayout>

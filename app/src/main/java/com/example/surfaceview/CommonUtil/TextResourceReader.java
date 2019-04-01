@@ -1,4 +1,4 @@
-package com.example.surfaceview.GLSurfaceView;
+package com.example.surfaceview.CommonUtil;
 
 import android.content.Context;
 import android.content.res.Resources;
@@ -9,7 +9,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 /**
- * Created by simon on 2017/5/16.
+ * Created by simon on 2017/icon_beauty_level_5/16.
  */
 
 public class TextResourceReader {

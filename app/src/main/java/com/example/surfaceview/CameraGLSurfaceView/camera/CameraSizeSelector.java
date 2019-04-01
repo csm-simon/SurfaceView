@@ -1,4 +1,4 @@
-package com.example.surfaceview.CameraGLSurfaceView;
+package com.example.surfaceview.CameraGLSurfaceView.camera;
 
 import android.support.annotation.IntDef;
 import java.io.*;
@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import com.example.surfaceview.CameraGLSurfaceView.SimonCamera.*;
+import com.example.surfaceview.CameraGLSurfaceView.camera.SimonCamera.*;
 import com.example.surfaceview.CommonUtil.MathUtil;
 import static com.example.surfaceview.CommonUtil.DeviceUtil.getScreenHeight;
 import static com.example.surfaceview.CommonUtil.DeviceUtil.getScreenWidth;

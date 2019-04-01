@@ -1,11 +1,14 @@
-package com.example.surfaceview.CameraGLSurfaceView;
+package com.example.surfaceview.CameraGLSurfaceView.view;
 
 import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
-import com.example.surfaceview.GLSurfaceView.TextResourceReader;
+import com.example.surfaceview.CameraGLSurfaceView.camera.SimonCamera;
+import com.example.surfaceview.CameraGLSurfaceView.camera.SimonCameraController;
+import com.example.surfaceview.CommonUtil.TextResourceReader;
+import com.example.surfaceview.CommonUtil.TextureUtil;
 import com.example.surfaceview.R;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -27,19 +30,21 @@ public class CameraGLSurfaceView extends GLSurfaceView {
 
     private int mFragmentShader = -1;
 
-    private int mPreviewTextureUniformLocation = -1;
+    private int mBeautyLevelPosition = -1;
 
     private int mAttrPosition = -1;
 
     private int mAttrTexcoord = -1;
 
-    private int[] mTextures = new int[1];
+    private int mTextureId = -1;
 
     private SurfaceTexture mSurfaceTexture;
 
     private FloatBuffer mVertexBuffer;
 
     private FloatBuffer mTextureVertexesBuffer;
+
+    private Float mBeautyLevel = 0.0f;//0~1
 
     //每个顶点由几个数字来确定
     private static final int COORDS_PER_VERTEX = 2;
@@ -54,11 +59,18 @@ public class CameraGLSurfaceView extends GLSurfaceView {
             1,-1
     };
 
-    private float[] textureVertexes = {
+    private float[] textureVertexes_back = {
             0,1,
             0,0,
             1,1,
             1,0
+    };
+
+    private float[] textureVertexes_front = {
+            1,1,
+            1,0,
+            0,1,
+            0,0
     };
 
     public CameraGLSurfaceView(Context context) {
@@ -78,6 +90,34 @@ public class CameraGLSurfaceView extends GLSurfaceView {
         this.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
     }
 
+    public void setUpVertexByteBuffer() {
+        ByteBuffer vertexByteBuffer = ByteBuffer.allocateDirect(vertexes.length * 4);
+        vertexByteBuffer.order(ByteOrder.nativeOrder());
+        mVertexBuffer = vertexByteBuffer.asFloatBuffer();
+        mVertexBuffer.put(vertexes);
+        mVertexBuffer.position(0);
+    }
+
+    public void setUpTextureByteBuffer() {
+        if (SimonCameraController.getInstance().getCurFacing() == SimonCamera.Facing.BACK) {
+            ByteBuffer textureByteBuffer = ByteBuffer.allocateDirect(textureVertexes_back.length * 4);
+            textureByteBuffer.order(ByteOrder.nativeOrder());
+            mTextureVertexesBuffer = textureByteBuffer.asFloatBuffer();
+            mTextureVertexesBuffer.put(textureVertexes_back);
+            mTextureVertexesBuffer.position(0);
+        } else {
+            ByteBuffer textureByteBuffer = ByteBuffer.allocateDirect(textureVertexes_front.length * 4);
+            textureByteBuffer.order(ByteOrder.nativeOrder());
+            mTextureVertexesBuffer = textureByteBuffer.asFloatBuffer();
+            mTextureVertexesBuffer.put(textureVertexes_front);
+            mTextureVertexesBuffer.position(0);
+        }
+    }
+
+    public void setmBeautyLevel(Float beautyLevel) {
+        mBeautyLevel = beautyLevel;
+    }
+
     public void onDestroy() {
         SimonCameraController.getInstance().stopCamera();
     }
@@ -87,32 +127,23 @@ public class CameraGLSurfaceView extends GLSurfaceView {
         @Override
         public void onSurfaceCreated(GL10 gl, EGLConfig config) {
 
-            ByteBuffer vertexByteBuffer = ByteBuffer.allocateDirect(vertexes.length * 4);
-            vertexByteBuffer.order(ByteOrder.nativeOrder());
-            mVertexBuffer = vertexByteBuffer.asFloatBuffer();
-            mVertexBuffer.put(vertexes);
-            mVertexBuffer.position(0);
-
-            ByteBuffer textureByteBuffer = ByteBuffer.allocateDirect(textureVertexes.length * 4);
-            textureByteBuffer.order(ByteOrder.nativeOrder());
-            mTextureVertexesBuffer = textureByteBuffer.asFloatBuffer();
-            mTextureVertexesBuffer.put(textureVertexes);
-            mTextureVertexesBuffer.position(0);
-
             mVertexShader = loadShader(GL_VERTEX_SHADER, TextResourceReader.readTextFileFromResource(mContext, R.raw.vertex_shader));
             mFragmentShader = loadShader(GL_FRAGMENT_SHADER,TextResourceReader.readTextFileFromResource(mContext,R.raw.fragment_shader_camera));
 
-            glGenTextures(1,mTextures,0);
-            GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, mTextures[0]); //将第一个纹理单元保存到mTexture数组的第一个元素
-            GLES20.glTexParameterf(GL_TEXTURE_EXTERNAL_OES, GL10.GL_TEXTURE_MIN_FILTER,GL10.GL_LINEAR);//设置纹理缩小情况下使用双线性过滤
-            GLES20.glTexParameterf(GL_TEXTURE_EXTERNAL_OES, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_LINEAR);//设置纹理放大情况下使用双线性过滤
-            GLES20.glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL10.GL_TEXTURE_WRAP_S, GL10.GL_CLAMP_TO_EDGE);//设置纹理在横向上平铺
-            GLES20.glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL10.GL_TEXTURE_WRAP_T, GL10.GL_CLAMP_TO_EDGE);//设置纹理在纵向上平铺
+            mProgram = glCreateProgram();
+            glAttachShader(mProgram,mVertexShader);
+            glAttachShader(mProgram,mFragmentShader);
+            glLinkProgram(mProgram);
 
-            mSurfaceTexture = new SurfaceTexture(mTextures[0]);
+            mTextureId = TextureUtil.createTexture(GL_TEXTURE_EXTERNAL_OES);
+
+            mSurfaceTexture = new SurfaceTexture(mTextureId);
             mSurfaceTexture.setOnFrameAvailableListener(this);
 
             SimonCameraController.getInstance().createCamera();
+
+            setUpVertexByteBuffer();
+            setUpTextureByteBuffer();
 
         }
 
@@ -120,7 +151,8 @@ public class CameraGLSurfaceView extends GLSurfaceView {
         public void onSurfaceChanged(GL10 gl, int width, int height) {
             glViewport(0,0,width,height);
 
-            SimonCameraController.getInstance().startPreview(mSurfaceTexture);
+            SimonCameraController.getInstance().setPreviewSurface(mSurfaceTexture);
+            SimonCameraController.getInstance().startPreview();
 
         }
 
@@ -129,22 +161,13 @@ public class CameraGLSurfaceView extends GLSurfaceView {
             glClearColor(1.0f,1.0f,1.0f,1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BITS);
 
-            mProgram = glCreateProgram();
-            glAttachShader(mProgram,mVertexShader);
-            glAttachShader(mProgram,mFragmentShader);
-            glLinkProgram(mProgram);
             glUseProgram(mProgram);
 
             //获取一帧数据
             mSurfaceTexture.updateTexImage();
-            float[] mtx = new float[16];
-            mSurfaceTexture.getTransformMatrix(mtx);
 
-            mPreviewTextureUniformLocation = glGetUniformLocation(mProgram,"previewTexture");
-            glUniform1f(mPreviewTextureUniformLocation,0);
-
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_EXTERNAL_OES,mTextures[0]);
+            glActiveTexture(mTextureId);
+            glBindTexture(GL_TEXTURE_EXTERNAL_OES,mTextureId);
 
             mAttrPosition = glGetAttribLocation(mProgram,"position");
             glEnableVertexAttribArray(mAttrPosition);
@@ -153,6 +176,9 @@ public class CameraGLSurfaceView extends GLSurfaceView {
             mAttrTexcoord = glGetAttribLocation(mProgram, "texcoord");
             glEnableVertexAttribArray(mAttrTexcoord);
             glVertexAttribPointer(mAttrTexcoord,COORDS_PER_VERTEX,GL_FLOAT,false,vertexStride,mTextureVertexesBuffer);
+
+            mBeautyLevelPosition = glGetUniformLocation(mProgram,"beautyLevel");
+            glUniform1f(mBeautyLevelPosition,mBeautyLevel);
 
             glDrawArrays(GLES20.GL_TRIANGLE_STRIP,0,4);
 
@@ -169,5 +195,6 @@ public class CameraGLSurfaceView extends GLSurfaceView {
         public void onFrameAvailable(SurfaceTexture surfaceTexture) {
             requestRender();
         }
+
     }
 }
